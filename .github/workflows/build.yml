@@ -1,0 +1,44 @@
+name: Build Android APK from Zip
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Find and extract ZIP archive
+        run: |
+          ls -la
+          ZIP_FILE=$(ls *.zip | head -n 1)
+          echo "Found zip archive: $ZIP_FILE"
+          unzip -q "$ZIP_FILE" -d extracted_project
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build APK using Gradle 8.7
+        run: |
+          SETTINGS_FILE=$(find extracted_project -name "settings.gradle.kts" -o -name "settings.gradle" | head -n 1)
+          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+          echo "Building project in: $PROJECT_DIR"
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: POtrade-Debug-APK
+          path: '**/build/outputs/apk/debug/*.apk'
