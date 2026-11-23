@@ -1,4 +1,4 @@
-name: Build Android APK from Zip
+name: Build ApexGrid APK
 
 on:
   push:
@@ -43,14 +43,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install required SDK components
+      - name: Verify preinstalled Android SDK
         shell: bash
         run: |
-          sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
-          yes | sdkmanager --licenses > /dev/null || true
+          SDK_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "SDK_HOME=$SDK_HOME"
+          ls -la "$SDK_HOME" | head -20
+          if [ ! -d "$SDK_HOME/platforms/android-34" ]; then
+            echo "Installing platforms;android-34"
+            yes | "$SDK_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34"
+          fi
+          if [ ! -d "$SDK_HOME/build-tools/34.0.0" ]; then
+            echo "Installing build-tools;34.0.0"
+            yes | "$SDK_HOME/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;34.0.0"
+          fi
+          echo "Android SDK ready"
 
       - name: Setup Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
